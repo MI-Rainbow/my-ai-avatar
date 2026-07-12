@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>3D AI Partner - Voice Room</title>
     <style>
-        /* 画面全体のレイアウト調整（上下50%に強制固定するお守り） */
+        /* 画面全体のレイアウト調整（上下に強制固定するお守り） */
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; position: fixed; background: #7494c4; 
@@ -25,7 +25,7 @@
             padding: 8px 15px; border-radius: 20px; font-size: 13px; color: #333; z-index: 10; 
         }
 
-        /* 💡 自作のチャット画面（下半分の40%に完全固定） */
+        /* 自作のチャット画面（下半分の40%に完全固定） */
         #chat-section {
             width: 100%; height: 40vh; background: #7494c4;
             display: flex; flex-direction: column; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 20;
@@ -50,7 +50,8 @@
       {
         "imports": {
           "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"        }
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
       }
     </script>
 </head>
@@ -128,8 +129,8 @@
 
     <!-- ⬇️ AI会話＆音声合成（お喋り機能）の自作プログラム ⬇️ -->
     <script>
-        // ⚠️ 【重要設定】あなたの情報に書き換えてください ⚠️
-        const VERCEL_URL = 'https://my-ai-avatar-omega.vercel.app'; // 例: 'https://vercel.app'
+        // ⚠️ あなたのDomainsに書かれていた短い方のURLをセットしてあります
+        const VERCEL_URL = 'https://my-ai-avatar-omega.vercel.app'; 
         const DIFY_TOKEN = '76UxzBeCsCD94UMJ'; // あなたのDifyのトークン
 
         const chatContainer = document.getElementById('chat-container');
@@ -148,7 +149,7 @@
             const aiBubble = appendBubble('考え中だよ...', 'ai');
 
             try {
-                // Vercelの中継基地へ安全にデータを送信します！
+                // Vercelの中継基地へ安全にデータを送信します
                 const response = await fetch(`${VERCEL_URL}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -161,7 +162,7 @@
                     // AIの返事を画面に表示
                     aiBubble.innerText = data.answer;
                     
-                    // 💡 【大発明】AIの返事の文字を、スマホに「声」として喋らせます！
+                    // 💡 AIの返事の文字を、スマホに「声」として喋らせます！
                     speakVoice(data.answer);
                 } else {
                     aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
@@ -172,7 +173,7 @@
             }
         }
 
-        // 🗣️ 音声合成で喋らせる魔法のプログラム（声の強制バインド版）
+        // 🗣️ 音声合成で喋らせる魔法のプログラム（声の強制バインド修正版）
         function speakVoice(text) {
             // 前のセリフが残っていたら強制的にキャンセルして新しく喋らせるお守り
             window.speechSynthesis.cancel();
@@ -183,7 +184,7 @@
             uttr.rate = 1.0;     
             uttr.pitch = 1.2;    
 
-            // 💡 PCやスマホの中に最初から入っている「本物の日本語の声」を自動で探し出す処理
+            // PCやスマホの中に最初から入っている「本物の日本語の声」を自動で探し出す処理
             const voices = window.speechSynthesis.getVoices();
             const jaVoice = voices.find(voice => voice.lang.includes('ja-JP') || voice.lang.includes('ja_JP'));
             
@@ -195,6 +196,7 @@
             // 音声を再生！
             window.speechSynthesis.speak(uttr);
         }
+
         function appendBubble(text, sender) {
             const bubble = document.createElement('div');
             bubble.classList.add('bubble', sender);
@@ -206,6 +208,11 @@
 
         sendBtn.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+        // iOS（iPhone）で声を最初に出すための、ブラウザの音声の準備（初期化）
+        window.addEventListener('DOMContentLoaded', () => {
+            window.speechSynthesis.getVoices();
+        });
     </script>
 
 </body>
