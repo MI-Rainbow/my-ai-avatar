@@ -217,76 +217,30 @@
  if (jaVoice) fillerUttr.voice = jaVoice;
  window.speechSynthesis.speak(fillerUttr);
 
- try {
- const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ text: text })
- });
+  // ーーー index.html の try の中身をここから上書き ーーー
+  try {
+    const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    });
 
- const reader = response.body.getReader();
- const decoder = new TextDecoder();
- let done = false;
- let currentSentence = '';
- aiBubble.innerText = ''; 
+    const data = await response.json();
+    
+    if (data && data.answer) {
+      // 白紙にせず、届いたAIの回答をバシッと一発で表示
+      aiBubble.innerText = data.answer;
+      // AIの声をスピーカーから再生
+      speakTextChunk(data.answer);
+    } else {
+      aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
+    }
 
-      // ーーー ここから書き換え ーーー
-      let buffer = ''; // 分割されて届くデータを溜めるバッファ
-
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        if (value) {
-          buffer += decoder.decode(value, { stream: !done });
-          
-          // 改行コード（\n）ごとにデータを区切って1行ずつ処理する
-          const lines = buffer.split('\n');
-          // 最後の未完成な行はバッファに残し、それ以外をループ処理
-          buffer = lines.pop(); 
-          
-          for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine || !trimmedLine.startsWith('data:')) continue;
-            
-            try {
-              // 「data: 」の文字を消して純粋なJSON文字列にする
-              const jsonStr = trimmedLine.substring(5).trim();
-              if (jsonStr === '[DONE]') continue; // 通信終了の合図はスキップ
-              
-              const jsonData = JSON.parse(jsonStr);
-              
-              // チャットボットから文字（answer）が届いた場合
-              if (jsonData && jsonData.answer) {
-                const newText = jsonData.answer;
-                
-                // アバターの吹き出しに1文字ずつ追加
-                if (aiBubble.innerText === '...') aiBubble.innerText = '';
-                aiBubble.innerText += newText; 
-                currentSentence += newText;
-
-                // 句読点（。や！や？）が来たら、その塊を即座に音声合成に回す
-                if (newText.includes('。') || newText.includes('！') || newText.includes('？')) {
-                  speakTextChunk(currentSentence);
-                  currentSentence = '';
-                }
-              }
-            } catch (e) {
-              // JSONのパースエラーが起きてもシステムをクラッシュさせずに無視する
-              console.log("パーススキップ:", e);
-            }
-          }
-        }
-      }
-      // ーーー ここまで書き換え ーーー
-
- if (currentSentence.trim()) {
- speakTextChunk(currentSentence);
- }
-
- } catch (error) {
- console.error(error);
- aiBubble.innerText = 'エラーが発生しちゃった。';
- }
+  } catch (error) {
+    console.error(error);
+    aiBubble.innerText = '中継サーバーとの通信でエラーが起きちゃった。';
+  }
+  // ーーー ここまで上書き ーーー
  }
 
  function appendBubble(text, sender) {

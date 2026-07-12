@@ -1,4 +1,4 @@
-// ストリーミング中継に対応した、最速レスポンス用の api/chat.js
+// Difyから一括でデータを受け取ってブラウザへ送る、安定版中継プログラム
 export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -16,10 +16,10 @@ export default async function handler(request, response) {
     const { text } = request.body;
     const systemToken = process.env.DIFY_API_KEY;
     if (!systemToken) {
-      return response.status(500).json({ error: 'DIFY_API_KEY が設定されていません。' });
+      return response.status(500).json({ error: 'Vercel側に DIFY_API_KEY が設定されていません。' });
     }
     
-    // response_mode を「streaming」にして、Difyからリアルタイムに言葉を返してもらいます
+    // response_mode を最安定の「blocking」に設定します
     const difyResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
       method: 'POST',
       headers: {
@@ -29,41 +29,26 @@ export default async function handler(request, response) {
       body: JSON.stringify({
         inputs: {},
         query: text,
-        response_mode: 'streaming',
+        response_mode: 'blocking', // ここを最安定の blocking に変更
         user: 'vercel-user',
-        conversation_id: ""
+        conversation_id: "" 
       })
     });
     
+    const data = await difyResponse.json();
+    
     if (!difyResponse.ok) {
-      return response.status(difyResponse.status).json({ error: 'Dify側でエラーが発生しました。' });
+      console.error('Dify API Error:', data);
+      return response.status(difyResponse.status).json({ error: data.message || 'Difyエラー' });
     }
     
-    // ブラウザに対しても「これからリアルタイムにデータを流し込みます（Stream）」と伝えます
-    response.setHeader('Content-Type', 'text/event-stream');
-    response.setHeader('Cache-Control', 'no-cache');
-    response.setHeader('Connection', 'keep-alive');
-    
-    const reader = difyResponse.body.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-    
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
-      if (value) {
-        const chunk = decoder.decode(value, { stream: !done });
-        // Difyから届いた生のデータを、そのままブラウザにリアルタイムで転送します
-        response.write(chunk);
-      }
-    }
-    
-    response.end();
+    // index.htmlが正常に受け取れる形（data.answer）にして返却
+    return response.status(200).json({
+      answer: data.answer || 'お返事が見つかりませんでした。'
+    });
     
   } catch (error) {
     console.error(error);
-    if (!response.writableEnded) {
-      response.status(500).json({ error: 'サーバー内部エラー' });
-    }
+    return response.status(500).json({ error: 'サーバー内部エラーが発生しました。' });
   }
 }
