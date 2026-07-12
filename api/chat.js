@@ -1,11 +1,9 @@
-// DifyのCORSブロックを100%回避する、Vercel専用の中継プログラム（API）
+// Difyの環境変数の鍵を100%正しく利用する、Vercel用中継プログラム
 export default async function handler(request, response) {
-    // どのサイト（スマホ）からアクセスされても通信を許可する設定
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // 接続テスト用のお守り処理
     if (request.method === 'OPTIONS') {
         return response.status(200).end();
     }
@@ -15,13 +13,19 @@ export default async function handler(request, response) {
     }
 
     try {
-        const { text, token } = request.body;
+        const { text } = request.body;
+        
+        // 💡 VercelのSettingsで設定した環境変数「DIFY_API_KEY」をここで安全に呼び出します！
+        const systemToken = process.env.DIFY_API_KEY;
 
-        // Difyの会話窓口（本物のAPI住所）へデータを安全に転送します
+        if (!systemToken) {
+            return response.status(500).json({ error: 'Vercel側にDIFY_API_KEYが設定されていません。' });
+        }
+
         const difyResponse = await fetch('https://dify.ai', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': `Bearer ${systemToken}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -33,12 +37,10 @@ export default async function handler(request, response) {
         });
 
         const data = await difyResponse.json();
-        
-        // Difyから返ってきたAIの生の返答を、そのままあなたのスマホへ返します
         return response.status(200).json(data);
 
     } catch (error) {
         console.error(error);
-        return response.status(500).json({ error: '中継サーバーでエラーが発生しました。' });
+        return response.status(500).json({ error: '中継サーバー内部でエラーが発生しました。' });
     }
 }
