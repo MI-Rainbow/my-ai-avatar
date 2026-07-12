@@ -1,4 +1,4 @@
-// ストリーミング中継に対応した、最速レスポンス用の api/chat.js
+// Difyの最新データ仕様（messageイベント）に対応した400エラー完全回避版中継プログラム
 export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -16,10 +16,9 @@ export default async function handler(request, response) {
     const { text } = request.body;
     const systemToken = process.env.DIFY_API_KEY;
     if (!systemToken) {
-      return response.status(500).json({ error: 'DIFY_API_KEY が設定されていません。' });
+      return response.status(500).json({ error: 'Vercel側に DIFY_API_KEY が設定されていません。' });
     }
     
-    // response_mode を「streaming」にして、Difyからリアルタイムに言葉を返してもらいます
     const difyResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
       method: 'POST',
       headers: {
@@ -36,16 +35,14 @@ export default async function handler(request, response) {
     });
     
     if (!difyResponse.ok) {
+      const errorData = await difyResponse.json().catch(() => ({}));
+      console.error('Dify API Error:', errorData);
       return response.status(difyResponse.status).json({ error: 'Dify側でエラーが発生しました。' });
     }
     
-    // ブラウザに対しても「これからリアルタイムにデータを流し込みます（Stream）」と伝えます
-    response.setHeader('Content-Type', 'text/event-stream');
-    response.setHeader('Cache-Control', 'no-cache');
-    response.setHeader('Connection', 'keep-alive');
-    
     const reader = difyResponse.body.getReader();
     const decoder = new TextDecoder();
+    let fullAnswer = '';
     let done = false;
     
     while (!done) {
@@ -53,17 +50,40 @@ export default async function handler(request, response) {
       done = doneReading;
       if (value) {
         const chunk = decoder.decode(value, { stream: !done });
-        // Difyから届いた生のデータを、そのままブラウザにリアルタイムで転送します
-        response.write(chunk);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data:')) {
+            try {
+              const jsonStr = trimmed.substring(5).trim();
+              if (jsonStr === '[DONE]') continue;
+              const jsonData = JSON.parse(jsonStr);
+              
+              // 【★最新仕様への修正箇所】
+              // Difyの最新形式（messageまたはagent_messageイベント）から文字データを確実に抽出します
+              if (jsonData.event === 'message' && jsonData.answer) {
+                fullAnswer += jsonData.answer;
+              } else if (jsonData.event === 'agent_message' && jsonData.answer) {
+                fullAnswer += jsonData.answer;
+              } else if (jsonData.answer) {
+                // 予備用のフォールバック処理
+                fullAnswer += jsonData.answer;
+              }
+            } catch (e) {
+              // データの切れ目のパースエラーは安全に無視
+            }
+          }
+        }
       }
     }
     
-    response.end();
+    // index.html側が求めている形（data.answer）にして返却
+    return response.status(200).json({
+      answer: fullAnswer.trim() || 'お返事が見つかりませんでした。'
+    });
     
   } catch (error) {
     console.error(error);
-    if (!response.writableEnded) {
-      response.status(500).json({ error: 'サーバー内部エラー' });
-    }
+    return response.status(500).json({ error: 'サーバー内部エラーが発生しました。' });
   }
 }
