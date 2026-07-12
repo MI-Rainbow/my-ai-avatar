@@ -167,6 +167,12 @@
  if (isRecording) {
  recognition.stop();
  } else {
+ // 【iPhone対策】マイクを押した瞬間に、一瞬だけ無音を再生して音声ロックを解除します
+ window.speechSynthesis.cancel();
+ const unlockUtterance = new SpeechSynthesisUtterance('');
+ unlockUtterance.lang = 'ja-JP';
+ window.speechSynthesis.speak(unlockUtterance);
+
  recognition.start();
  }
  });
