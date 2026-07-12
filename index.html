@@ -25,6 +25,7 @@
             height: 50vh; /* 画面の縦幅のちょうど半分に固定 */
             background: #eceff1; 
             position: relative;
+            touch-action: none; /* 💡 ここにこの1行を付け足します！ */
         }
         canvas { 
             width: 100% !important; 
@@ -129,6 +130,11 @@
             camera.updateProjectionMatrix();
             renderer.setSize(container.clientWidth, container.clientHeight);
         });
+        // 💡 ここから下の4行を新しく付け足します！
+        // アバター画面上での指の動き（スワイプ）を強制的にキャンセルするお守りです
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
     </script>
 
     <!-- ⬇️ Dify公式のチャット埋め込みコード ⬇️ -->
