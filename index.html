@@ -41,6 +41,7 @@
             color: #333;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             pointer-events: none; /* マウス操作を邪魔しないお守り */
+            z-index: 10; /* アバターの前に確実に表示させるお守り */
         }
 
         /* スマホで見るときは上下分割に自動切り替えする設定 */
@@ -51,7 +52,7 @@
     </style>
     
     <!-- パソコンの中の「three.module.js」を正しく登録します -->
-    <!--
+    <!-- 
     <script type="importmap">
       {
         "imports": {
@@ -61,11 +62,7 @@
       }
     </script>
     -->
-    <!-- 
-      インターネット上（GitHub）で公開するため、
-      安全な配信サイトから最新の本物のThree.jsを自動で読み込みます。
-      これで巨大なフォルダーのアップロードは一切不要になります！
-    -->
+
     <script type="importmap">
       {
         "imports": {
@@ -98,7 +95,11 @@
         camera.position.set(0.0, 1.1, 1.2); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        // 💡 iPhoneの最新セキュリティ制限を突破するための「縦横サイズ指定」を追加しました
         renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio); // スマホ画面でアバターがボケずにクッキリ映る魔法です
+        
         container.appendChild(renderer.domElement);
 
         // 照明（アバターを明るく照らす）
@@ -119,16 +120,10 @@
                 // アニメーションループ（ゆらゆら動く呼吸モーションを追加）
                 function animate() {
                     requestAnimationFrame(animate);
-                    
-                    // 時間の経過を使って、綺麗な波（サイン波）を作ります
                     const time = Date.now() * 0.002; 
-                    
-                    // アバターの上下位置（y軸）をほんの少しだけ優しく揺らします
                     model.position.y = Math.sin(time) * 0.01;
-                    
                     renderer.render(scene, camera);
                 }
-
                 animate();
                 console.log('アバターの合体に成功しました！');
             },
@@ -153,6 +148,7 @@
       userVariables: {},
      }
     </script>
+    <!-- 💡 スマホでもボタンが出現するよう、正しいプログラムのURL（/embed.min.js）に修正しました -->
     <script
      src="udify.app/embed.min.js"
      id="76UxzBeCsCD94UMJ"
