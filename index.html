@@ -5,32 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>3D AI Partner - Voice Room</title>
     <style>
+        /* 画面全体のスクロールとバウンドを100%禁止して固定します */
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; position: fixed; background: #7494c4; 
             font-family: sans-serif; display: flex; flex-direction: column;
         }
         
-        /* 💡 iPhone13用に高さを60%から45%に下げ、チャット入力欄のスペースを広げました */
+        /* 💡 アバターが細長く伸びるのを防ぐため、高さを45vhから40%（%指定）に変更しました */
         #avatar-container { 
-            width: 100%; height: 45vh; 
+            width: 100%; height: 40%; 
             background: #eceff1; position: relative; touch-action: none;
         }
-        canvas { width: 100% !important; height: 100% !important; display: block; }
-
-        #welcome-msg { 
-            position: absolute; top: 15px; left: 15px; background: rgba(255, 255, 255, 0.8); 
-            padding: 8px 15px; border-radius: 20px; font-size: 12px; color: #333; z-index: 10; 
+        canvas { 
+            width: 100% !important; height: 100% !important; 
+            display: block; object-fit: contain; /* 💡 縦横が変に変形するのを防止するお守り */
         }
 
-        /* 💡 チャット領域を縦幅55%に広げ、入力欄が絶対に最前面に出るように固定 */
+        #welcome-msg { 
+            position: absolute; top: 12px; left: 12px; background: rgba(255, 255, 255, 0.8); 
+            padding: 6px 12px; border-radius: 20px; font-size: 11px; color: #333; z-index: 10; 
+        }
+
+        /* 💡 チャット領域を残りの60%に設定し、iPhone13の画面内に必ず収めます */
         #chat-section {
-            width: 100%; height: 55vh; background: #7494c4;
+            width: 100%; height: 60%; background: #7494c4;
             display: flex; flex-direction: column; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 20;
         }
         #chat-container {
             flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;
-            -webkit-overflow-scrolling: touch; /* iPhoneでスルスル動くお守り */
+            -webkit-overflow-scrolling: touch;
         }
         .bubble { 
             max-width: 75%; padding: 8px 12px; border-radius: 18px; 
@@ -39,10 +43,11 @@
         .user { background: #85e249; align-self: flex-end; border-top-right-radius: 2px; }
         .ai { background: #ffffff; align-self: flex-start; border-top-left-radius: 2px; }
         
-        /* 入力エリア（iPhoneの下部バーに被らないよう、下に少し余白を追加） */
+        /* 💡 入力エリアを最前面に浮かせ、iPhoneのホームバーに絶対に被らない位置に調整 */
         #input-area { 
-            background: #ffffff; padding: 10px 10px 25px 10px; 
+            background: #ffffff; padding: 10px 10px 30px 10px; 
             display: flex; gap: 8px; border-top: 1px solid #ddd; z-index: 30;
+            position: relative;
         }
         #user-input { flex: 1; padding: 8px 15px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; }
         #send-btn { background: #5c7bb0; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 14px; cursor: pointer; }
@@ -80,13 +85,16 @@
         const container = document.getElementById('avatar-container');
         const scene = new THREE.Scene();
         
-        // 45%の高さに合わせて、アバターの顔が画面の中央に来るようにカメラを少し下げました
-        const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 20.0);
-        camera.position.set(0.0, 1.0, 1.3); 
+        // 💡 縦横比（clientWidth / clientHeight）を、スマホの画面サイズからリアルタイムに取得して、やせ細りを絶対防ぎます
+        const width = container.clientWidth || window.innerWidth;
+        const height = container.clientHeight || (window.innerHeight * 0.4);
+        
+        const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
+        camera.position.set(0.0, 1.0, 1.3); // 黄金比率
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(window.devicePixelRatio); 
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 画面が潰れるのを防ぐ解像度制限
         container.appendChild(renderer.domElement);
 
         const light = new THREE.DirectionalLight(0xffffff, 3.0);
@@ -114,17 +122,22 @@
             (error) => console.error('エラー:', error)
         );
 
+        // 画面サイズ自動変更時も、縦横比が絶対に壊れないように再計算します
         window.addEventListener('resize', () => {
-            camera.aspect = container.clientWidth / container.clientHeight;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setSize(w, h);
         });
 
         container.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
     </script>
 
     <script>
+        // 💡 ご指定いただいた本物のURLとトークンを最初からセットしました！
         const VERCEL_URL = 'https://my-ai-avatar-omega.vercel.app'; 
+        const DIFY_TOKEN = '76UxzBeCsCD94UMJ'; 
 
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
@@ -140,7 +153,6 @@
             const aiBubble = appendBubble('考え中だよ...', 'ai');
 
             try {
-                // 💡 Vercel側の新しいプログラムに合わせて、DIFY_TOKENを送信しないシンプルな形に修正しました
                 const response = await fetch(`${VERCEL_URL}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
