@@ -15,13 +15,13 @@ export default async function handler(request, response) {
   try {
     const { text } = request.body;
     
-    // VercelのSettingsで設定した環境変数「DIFY_API_KEY」を安全に呼び出します
+    // Vercelの環境変数を呼び出し
     const systemToken = process.env.DIFY_API_KEY;
     if (!systemToken) {
       return response.status(500).json({ error: 'Vercel側に DIFY_API_KEY が設定されていません。' });
     }
     
-    // 【修正完了】送信先を正しいDifyのチャットAPIエンドポイントに変更しました
+    // エージェントアプリでもエラー（400）が出ないよう、最も互換性の高い「streaming」でDifyと通信します
     const difyResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
       method: 'POST',
       headers: {
@@ -31,22 +31,51 @@ export default async function handler(request, response) {
       body: JSON.stringify({
         inputs: {},
         query: text,
-        response_mode: 'blocking',
+        response_mode: 'streaming', // 400エラーを防ぐためstreamingに変更
         user: 'vercel-user'
       })
     });
     
-    const data = await difyResponse.json();
-    
-    // Difyからエラーが返ってきた場合の処理
     if (!difyResponse.ok) {
-      console.error('Dify API Error:', data);
-      return response.status(difyResponse.status).json({ error: data.message || 'Dify側でエラーが発生しました。' });
+      const errorData = await difyResponse.json().catch(() => ({}));
+      console.error('Dify API Error:', errorData);
+      return response.status(difyResponse.status).json({ error: 'Dify側でエラーが発生しました。' });
     }
     
-    // index.htmlが「data.answer」で受け取れるように形を整えて返却します
+    // ストリーミングで届く文字列から、AIの回答テキスト（answer）だけを1つに結合して抽出します
+    const reader = difyResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let fullAnswer = '';
+    let done = false;
+    
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: !done });
+        // Difyから届く「data: {...}」の行を解析
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            try {
+              const jsonData = JSON.parse(line.substring(5).trim());
+              // 通常のチャット、またはエージェントの思考メッセージから文字を抽出します
+              if (jsonData.answer) {
+                fullAnswer += jsonData.answer;
+              } else if (jsonData.event === 'agent_message' && jsonData.answer) {
+                fullAnswer += jsonData.answer;
+              }
+            } catch (e) {
+              // 不完全なJSON行はスキップ
+            }
+          }
+        }
+      }
+    }
+    
+    // index.htmlが正常に受け取れる形（data.answer）にして返却
     return response.status(200).json({
-      answer: data.answer || 'お返事が見つかりませんでした。'
+      answer: fullAnswer.trim() || 'お返事が見つかりませんでした。'
     });
     
   } catch (error) {
