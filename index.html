@@ -1,213 +1,234 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D AI Partner - Voice Room</title>
-    <style>
-        /* 画面全体のスクロールとバウンドを100%禁止して固定します */
-        html, body {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; position: fixed; background: #7494c4; 
-            font-family: sans-serif; display: flex; flex-direction: column;
-        }
-        
-        /* 💡 アバターが細長く伸びるのを防ぐため、高さを45vhから40%（%指定）に変更しました */
-        #avatar-container { 
-            width: 100%; height: 40%; 
-            background: #eceff1; position: relative; touch-action: none;
-        }
-        canvas { 
-            width: 100% !important; height: 100% !important; 
-            display: block; object-fit: contain; /* 💡 縦横が変に変形するのを防止するお守り */
-        }
-
-        #welcome-msg { 
-            position: absolute; top: 12px; left: 12px; background: rgba(255, 255, 255, 0.8); 
-            padding: 6px 12px; border-radius: 20px; font-size: 11px; color: #333; z-index: 10; 
-        }
-
-        /* 💡 チャット領域を残りの60%に設定し、iPhone13の画面内に必ず収めます */
-        #chat-section {
-            width: 100%; height: 60%; background: #7494c4;
-            display: flex; flex-direction: column; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 20;
-        }
-        #chat-container {
-            flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;
-            -webkit-overflow-scrolling: touch;
-        }
-        .bubble { 
-            max-width: 75%; padding: 8px 12px; border-radius: 18px; 
-            font-size: 13px; letter-spacing: -0.02em; line-height: 1.3; word-break: break-all; 
-        }
-        .user { background: #85e249; align-self: flex-end; border-top-right-radius: 2px; }
-        .ai { background: #ffffff; align-self: flex-start; border-top-left-radius: 2px; }
-        
-        /* 💡 入力エリアを最前面に浮かせ、iPhoneのホームバーに絶対に被らない位置に調整 */
-        #input-area { 
-            background: #ffffff; padding: 10px 10px 30px 10px; 
-            display: flex; gap: 8px; border-top: 1px solid #ddd; z-index: 30;
-            position: relative;
-        }
-        #user-input { flex: 1; padding: 8px 15px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; }
-        #send-btn { background: #5c7bb0; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 14px; cursor: pointer; }
-    </style>
-    
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-      }
-    </script>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>3D AI Partner - Voice Room</title>
+ <style>
+ /* 画面全体のスクロールとバウンドを 100%禁止して固定します */
+ html, body {
+ margin: 0; padding: 0; width: 100%; height: 100%;
+ overflow: hidden; position: fixed; background: #7494c4; 
+ font-family: sans-serif; display: flex; flex-direction: column;
+ }
+ 
+ #avatar-container { 
+ width: 100%; height: 40%; 
+ background: #eceff1; position: relative; touch-action: none;
+ }
+ canvas { 
+ width: 100% !important; height: 100% !important; 
+ display: block; object-fit: contain; 
+ }
+ #welcome-msg { 
+ position: absolute; top: 12px; left: 12px; background: rgba(255, 255, 255, 0.8); 
+ padding: 6px 12px; border-radius: 20px; font-size: 11px; color: #333; z-index: 10; 
+ }
+ #chat-section {
+ width: 100%; height: 60%; background: #7494c4;
+ display: flex; flex-direction: column; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 20;
+ }
+ #chat-container {
+ flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+ -webkit-overflow-scrolling: touch;
+ }
+ .bubble { 
+ max-width: 75%; padding: 8px 12px; border-radius: 18px; 
+ font-size: 13px; letter-spacing: -0.02em; line-height: 1.3; word-break: break-all; 
+ }
+ .user { background: #85e249; align-self: flex-end; border-top-right-radius: 2px; }
+ .ai { background: #ffffff; align-self: flex-start; border-top-left-radius: 2px; }
+ 
+ #input-area { 
+ background: #ffffff; padding: 10px 10px 30px 10px; 
+ display: flex; gap: 8px; border-top: 1px solid #ddd; z-index: 30;
+ position: relative;
+ }
+ #user-input { flex: 1; padding: 8px 15px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; }
+ #mic-btn { background: #e0e0e0; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
+ #mic-btn.recording { background: #ff5252; color: white; }
+ #send-btn { background: #5c7bb0; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+ </style>
+ <script type="importmap">
+ {
+ "imports": {
+"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+ }
+ }
+ </script>
 </head>
 <body>
+ <div id="avatar-container">
+ <div id="welcome-msg">私のお部屋へようこそ！下の入力欄からお喋りしてね。</div>
+ </div>
+ <div id="chat-section">
+ <div id="chat-container">
+ <div class="bubble ai">こんにちは！やっと声でお喋りできるようになったね。何でも話しかけてね！</div>
+ </div>
+ <div id="input-area">
+ <button id="mic-btn" title="声で話す">🎙️</button>
+ <input type="text" id="user-input" placeholder="メッセージを入力または声で..." autocomplete="off">
+ <button id="send-btn">送信</button>
+ </div>
+ </div>
+ <script type="module">
+ import * as THREE from 'three';
+ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+ const container = document.getElementById('avatar-container');
+ const scene = new THREE.Scene();
+ 
+ const width = container.clientWidth || window.innerWidth;
+ const height = container.clientHeight || (window.innerHeight * 0.4);
+ 
+ const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
+ camera.position.set(0.0, 1.0, 1.3); 
+ const renderer = new THREE.WebGLRenderer({ antialias: true });
+ renderer.setSize(width, height);
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+ container.appendChild(renderer.domElement);
+ const light = new THREE.DirectionalLight(0xffffff, 3.0);
+ light.position.set(1.0, 1.0, 1.0).normalize();
+ scene.add(light);
+ scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+ const loader = new GLTFLoader();
+ loader.load(
+ './avatar.vrm',
+ (gltf) => {
+ const model = gltf.scene;
+ scene.add(model);
+ model.rotation.y = 0; 
+ function animate() {
+ requestAnimationFrame(animate);
+ const time = Date.now() * 0.002; 
+ model.position.y = Math.sin(time) * 0.01;
+ renderer.render(scene, camera);
+ }
+ animate();
+ },
+ null,
+ (error) => console.error('エラー:', error)
+ );
+ window.addEventListener('resize', () => {
+ const w = container.clientWidth;
+ const h = container.clientHeight;
+ camera.aspect = w / h;
+ camera.updateProjectionMatrix();
+ renderer.setSize(w, h);
+ });
+ container.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+ </script>
+ <script>
+ const VERCEL_URL = 'https://my-ai-avatar-omega.vercel.app'; 
+ const chatContainer = document.getElementById('chat-container');
+ const userInput = document.getElementById('user-input');
+ const sendBtn = document.getElementById('send-btn');
+ const micBtn = document.getElementById('mic-btn');
 
-    <div id="avatar-container">
-        <div id="welcome-msg">私のお部屋へようこそ！下の入力欄からお喋りしてね。</div>
-    </div>
+ // --- 音声認識 (SpeechRecognition) の設定 ---
+ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+ let recognition = null;
+ let isRecording = false;
 
-    <div id="chat-section">
-        <div id="chat-container">
-            <div class="bubble ai">こんにちは！やっと声でお喋りできるようになったね。何でも話しかけてね！</div>
-        </div>
-        <div id="input-area">
-            <input type="text" id="user-input" placeholder="メッセージを入力..." autocomplete="off">
-            <button id="send-btn">送信</button>
-        </div>
-    </div>
+ if (SpeechRecognition) {
+ recognition = new SpeechRecognition();
+ recognition.lang = 'ja-JP';
+ recognition.interimResults = false; // 確定した結果だけ取得
+ recognition.maxAlternatives = 1;
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+ recognition.onstart = () => {
+ isRecording = true;
+ micBtn.classList.add('recording');
+ userInput.placeholder = "声を聴いています...";
+ };
 
-        const container = document.getElementById('avatar-container');
-        const scene = new THREE.Scene();
-        
-        // 💡 縦横比（clientWidth / clientHeight）を、スマホの画面サイズからリアルタイムに取得して、やせ細りを絶対防ぎます
-        const width = container.clientWidth || window.innerWidth;
-        const height = container.clientHeight || (window.innerHeight * 0.4);
-        
-        const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
-        camera.position.set(0.0, 1.0, 1.3); // 黄金比率
+ recognition.onend = () => {
+ isRecording = false;
+ micBtn.classList.remove('recording');
+ userInput.placeholder = "メッセージを入力または声で...";
+ };
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(width, height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 画面が潰れるのを防ぐ解像度制限
-        container.appendChild(renderer.domElement);
+ recognition.onresult = (event) => {
+ const speechResult = event.results[0][0].transcript;
+ userInput.value = speechResult;
+ sendMessage(); // 音声認識が完了したら自動送信
+ };
 
-        const light = new THREE.DirectionalLight(0xffffff, 3.0);
-        light.position.set(1.0, 1.0, 1.0).normalize();
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+ recognition.onerror = (event) => {
+ console.error("音声認識エラー:", event.error);
+ };
+ } else {
+ micBtn.style.display = 'none'; // ブラウザが音声認識非対応ならボタンを隠す
+ console.log("このブラウザは音声認識に対応していません。");
+ }
 
-        const loader = new GLTFLoader();
-        loader.load(
-            './avatar.vrm',
-            (gltf) => {
-                const model = gltf.scene;
-                scene.add(model);
-                model.rotation.y = 0; 
+ micBtn.addEventListener('click', () => {
+ if (!recognition) return;
+ if (isRecording) {
+ recognition.stop();
+ } else {
+ recognition.start();
+ }
+ });
 
-                function animate() {
-                    requestAnimationFrame(animate);
-                    const time = Date.now() * 0.002; 
-                    model.position.y = Math.sin(time) * 0.01;
-                    renderer.render(scene, camera);
-                }
-                animate();
-            },
-            null,
-            (error) => console.error('エラー:', error)
-        );
+ // --- メッセージ送信処理 ---
+ async function sendMessage() {
+ const text = userInput.value.trim();
+ if (!text) return;
+ appendBubble(text, 'user');
+ userInput.value = '';
+ const aiBubble = appendBubble('考え中だよ...', 'ai');
+ try {
+ const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ text: text })
+ });
+ const data = await response.json();
+ 
+ if (data && data.answer) {
+ aiBubble.innerText = data.answer;
+ speakVoice(data.answer);
+ } else {
+ aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
+ }
+ } catch (error) {
+ console.error(error);
+ aiBubble.innerText = '中継基地との通信でエラーが起きちゃったみたい。';
+ }
+ }
 
-        // 画面サイズ自動変更時も、縦横比が絶対に壊れないように再計算します
-        window.addEventListener('resize', () => {
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
-        });
+ // --- 音声合成 (読み上げ) 処理 ---
+ function speakVoice(text) {
+ window.speechSynthesis.cancel();
+ const uttr = new SpeechSynthesisUtterance();
+ uttr.text = text;
+ uttr.lang = 'ja-JP'; 
+ uttr.rate = 1.0; 
+ uttr.pitch = 1.2; 
+ const voices = window.speechSynthesis.getVoices();
+ const jaVoice = voices.find(voice => voice.lang.includes('ja-JP') || voice.lang.includes('ja_JP'));
+ 
+ if (jaVoice) {
+ uttr.voice = jaVoice;
+ }
+ window.speechSynthesis.speak(uttr);
+ }
 
-        container.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
-    </script>
+ function appendBubble(text, sender) {
+ const bubble = document.createElement('div');
+ bubble.classList.add('bubble', sender);
+ bubble.innerText = text;
+ chatContainer.appendChild(bubble);
+ chatContainer.scrollTop = chatContainer.scrollHeight;
+ return bubble;
+ }
 
-    <script>
-        // 💡 ご指定いただいた本物のURLとトークンを最初からセットしました！
-        const VERCEL_URL = 'https://my-ai-avatar-omega.vercel.app'; 
-        const DIFY_TOKEN = '76UxzBeCsCD94UMJ'; 
-
-        const chatContainer = document.getElementById('chat-container');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-
-        async function sendMessage() {
-            const text = userInput.value.trim();
-            if (!text) return;
-
-            appendBubble(text, 'user');
-            userInput.value = '';
-
-            const aiBubble = appendBubble('考え中だよ...', 'ai');
-
-            try {
-                const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text })
-                });
-
-                const data = await response.json();
-                
-                if (data && data.answer) {
-                    aiBubble.innerText = data.answer;
-                    speakVoice(data.answer);
-                } else {
-                    aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
-                }
-            } catch (error) {
-                console.error(error);
-                aiBubble.innerText = '中継基地との通信でエラーが起きちゃったみたい。';
-            }
-        }
-
-        function speakVoice(text) {
-            window.speechSynthesis.cancel();
-
-            const uttr = new SpeechSynthesisUtterance();
-            uttr.text = text;
-            uttr.lang = 'ja-JP'; 
-            uttr.rate = 1.0;     
-            uttr.pitch = 1.2;    
-
-            const voices = window.speechSynthesis.getVoices();
-            const jaVoice = voices.find(voice => voice.lang.includes('ja-JP') || voice.lang.includes('ja_JP'));
-            
-            if (jaVoice) {
-                uttr.voice = jaVoice;
-                console.log("日本語の音声を正常にセットしました:", jaVoice.name);
-            }
-
-            window.speechSynthesis.speak(uttr);
-        }
-
-        function appendBubble(text, sender) {
-            const bubble = document.createElement('div');
-            bubble.classList.add('bubble', sender);
-            bubble.innerText = text;
-            chatContainer.appendChild(bubble);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return bubble;
-        }
-
-        sendBtn.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            window.speechSynthesis.getVoices();
-        });
-    </script>
+ sendBtn.addEventListener('click', sendMessage);
+ userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+ window.addEventListener('DOMContentLoaded', () => {
+ window.speechSynthesis.getVoices();
+ });
+ </script>
 </body>
 </html>
