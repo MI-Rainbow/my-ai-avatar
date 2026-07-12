@@ -1,4 +1,4 @@
-// Difyの仕様変更・エージェント化による400エラーを完全に回避する中継プログラム
+// Difyの最新データ仕様（messageイベント）に対応した400エラー完全回避版中継プログラム
 export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -19,7 +19,6 @@ export default async function handler(request, response) {
       return response.status(500).json({ error: 'Vercel側に DIFY_API_KEY が設定されていません。' });
     }
     
-    // 【最重要】400エラーを防ぐため、一括（blocking）ではなく最も互換性の高い「streaming」でDifyと通信します
     const difyResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
       method: 'POST',
       headers: {
@@ -29,9 +28,9 @@ export default async function handler(request, response) {
       body: JSON.stringify({
         inputs: {},
         query: text,
-        response_mode: 'streaming', // エージェント機能やGeminiの仕様変更による400エラーを防ぎます
+        response_mode: 'streaming',
         user: 'vercel-user',
-        conversation_id: "" // 空文字のまま渡すことで新規会話として安全に処理します
+        conversation_id: ""
       })
     });
     
@@ -41,7 +40,6 @@ export default async function handler(request, response) {
       return response.status(difyResponse.status).json({ error: 'Dify側でエラーが発生しました。' });
     }
     
-    // 中継サーバー（Vercel）側でストリーミング文字をすべて綺麗に1つの文章に合体させます
     const reader = difyResponse.body.getReader();
     const decoder = new TextDecoder();
     let fullAnswer = '';
@@ -61,22 +59,25 @@ export default async function handler(request, response) {
               if (jsonStr === '[DONE]') continue;
               const jsonData = JSON.parse(jsonStr);
               
-              // 通常のテキスト、またはエージェントの思考ログから言葉を抽出
-              if (jsonData.answer) {
+              // 【★最新仕様への修正箇所】
+              // Difyの最新形式（messageまたはagent_messageイベント）から文字データを確実に抽出します
+              if (jsonData.event === 'message' && jsonData.answer) {
                 fullAnswer += jsonData.answer;
               } else if (jsonData.event === 'agent_message' && jsonData.answer) {
                 fullAnswer += jsonData.answer;
+              } else if (jsonData.answer) {
+                // 予備用のフォールバック処理
+                fullAnswer += jsonData.answer;
               }
             } catch (e) {
-              // データの切れ目のパースエラーは無視
+              // データの切れ目のパースエラーは安全に無視
             }
           }
         }
       }
     }
     
-    // index.html側が求めている「一括返却の形（data.answer）」に綺麗に変換して返します！
-    // これにより index.html 側は一括受取モードのまま一切書き換えずに動きます。
+    // index.html側が求めている形（data.answer）にして返却
     return response.status(200).json({
       answer: fullAnswer.trim() || 'お返事が見つかりませんでした。'
     });
