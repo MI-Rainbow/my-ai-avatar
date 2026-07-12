@@ -76,7 +76,7 @@
  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
  container.appendChild(renderer.domElement);
  
- // 【★エラー修正箇所】ライトの生成と座標設定を安全に2行に分けました
+ // ライトの生成と設定（Three.js最新版のクラッシュ対策済み）
  const dirLight = new THREE.DirectionalLight(0xffffff, 3.0);
  dirLight.position.set(1.0, 1.0, 1.0).normalize();
  scene.add(dirLight);
@@ -123,7 +123,6 @@
  recognition.onend = () => { isRecording = false; micBtn.classList.remove('recording'); userInput.placeholder = "メッセージを入力または声で..."; };
  
  recognition.onresult = (event) => { 
- // 【最適化】どのブラウザでも確実に音声文字を取得できるように調整
  if (event.results && event.results[0] && event.results[0][0]) {
  const speechResult = event.results[0][0].transcript;
  if (speechResult) {
@@ -150,7 +149,7 @@
  }
  });
 
- // 音声合成用のキュー（順番待ちリスト）管理
+ // 音声合成用のキュー管理
  let speechQueue = [];
  let isSpeaking = false;
 
