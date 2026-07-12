@@ -2,64 +2,50 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D AI Partner - Room</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D AI Partner - Voice Room</title>
     <style>
         /* 画面全体のレイアウト調整（上下50%に強制固定するお守り） */
         html, body {
-            margin: 0; 
-            padding: 0; 
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* 画面全体のスクロール（スワイプ）を完全に禁止 */
-            position: fixed;  /* iPhone特有の画面のバウンドを防止 */
-            background: #7494c4; 
-            font-family: sans-serif; 
-            display: flex; 
-            flex-direction: column; /* 上下に分割 */
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; position: fixed; background: #7494c4; 
+            font-family: sans-serif; display: flex; flex-direction: column;
         }
         
-        /* 3Dアバターが表示される上半分のエリア（常に50%をキープ） */
+        /* 3Dアバターが表示される上半分のエリア */
         #avatar-container { 
-            width: 100%;
-            height: 50vh; /* 画面の縦幅のちょうど半分に固定 */
-            background: #eceff1; 
-            position: relative;
-            touch-action: none; /* 💡 ここにこの1行を付け足します！ */
+            width: 100%; height: 60vh; /* アバターを大きく映すために60%に調整 */
+            background: #eceff1; position: relative; touch-action: none;
         }
-        canvas { 
-            width: 100% !important; 
-            height: 100% !important; 
-            display: block; 
-        }
+        canvas { width: 100% !important; height: 100% !important; display: block; }
 
         /* 案内テキストのスタイル */
         #welcome-msg { 
-            position: absolute; 
-            top: 15px; 
-            left: 15px; 
-            background: rgba(255, 255, 255, 0.8); 
-            padding: 8px 15px; 
-            border-radius: 20px; 
-            font-size: 13px; /* 少し文字を小さく調整 */
-            color: #333;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            pointer-events: none; 
-            z-index: 10; 
+            position: absolute; top: 15px; left: 15px; background: rgba(255, 255, 255, 0.8); 
+            padding: 8px 15px; border-radius: 20px; font-size: 13px; color: #333; z-index: 10; 
         }
 
-        /* スマホで見るときは上下分割に自動切り替えする設定 */
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            #avatar-container { height: 50vh; }
+        /* 💡 自作のチャット画面（下半分の40%に完全固定） */
+        #chat-section {
+            width: 100%; height: 40vh; background: #7494c4;
+            display: flex; flex-direction: column; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 20;
         }
+        #chat-container {
+            flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .bubble { 
+            max-width: 75%; padding: 8px 12px; border-radius: 18px; 
+            font-size: 13px; letter-spacing: -0.02em; line-height: 1.3; word-break: break-all; 
+        }
+        .user { background: #85e249; align-self: flex-end; border-top-right-radius: 2px; }
+        .ai { background: #ffffff; align-self: flex-start; border-top-left-radius: 2px; }
+        
+        /* 入力エリア */
+        #input-area { background: #ffffff; padding: 8px; display: flex; gap: 8px; border-top: 1px solid #ddd; }
+        #user-input { flex: 1; padding: 8px 15px; border: 1px solid #ccc; border-radius: 20px; font-size: 14px; outline: none; }
+        #send-btn { background: #5c7bb0; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 14px; cursor: pointer; }
     </style>
     
-    <!-- 
-      インターネット上（GitHub）で、お互いのバージョンが100%完全に一致する
-      本物の「本体」と本物の「GLTFLoader」を、世界で最も安全な配信サイト（unpkg）から自動読み込みします。
-      これであなたのPC内のthree.module.jsやGLTFLoader.jsは一切不要になり、バージョン違いのエラーも100%発生しません！
-    -->
     <script type="importmap">
       {
         "imports": {
@@ -70,13 +56,21 @@
     </script>
 </head>
 <body>
-
-    <!-- 左半分：3Dアバターのお部屋 -->
+    <!-- 上半分：3Dアバターのお部屋 -->
     <div id="avatar-container">
-        <div id="welcome-msg">私のお部屋へようこそ！右下のボタンから話しかけてね。</div>
+        <div id="welcome-msg">私のお部屋へようこそ！下の入力欄からお喋りしてね。</div>
     </div>
 
-    <!-- 右半分（または右下）：Difyチャットが自動で埋め込まれる空間 -->
+    <!-- 下半分：自作のLINE風チャット画面 -->
+    <div id="chat-section">
+        <div id="chat-container">
+            <div class="bubble ai">こんにちは！やっと声でお喋りできるようになったね。何でも話しかけてね！</div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="メッセージを入力..." autocomplete="off">
+            <button id="send-btn">送信</button>
+        </div>
+    </div>
 
     <!-- ⬇️ 3Dアバターを動かすプログラム ⬇️ -->
     <script type="module">
@@ -86,16 +80,15 @@
         const container = document.getElementById('avatar-container');
         const scene = new THREE.Scene();
         
-        // カメラの位置（黄金比率）
         const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 20.0);
-        camera.position.set(0.0, 1.1, 1.2); 
+        camera.position.set(0.0, 1.1, 1.4); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio); 
         container.appendChild(renderer.domElement);
 
-        // 照明（アバターを明るく照らす）
+        // 照明
         const light = new THREE.DirectionalLight(0xffffff, 3.0);
         light.position.set(1.0, 1.0, 1.0).normalize();
         scene.add(light);
@@ -108,7 +101,7 @@
             (gltf) => {
                 const model = gltf.scene;
                 scene.add(model);
-                model.rotation.y = 0; // まっすぐ正面を向かせます
+                model.rotation.y = 0; 
 
                 // アニメーションループ（ゆらゆら動く呼吸モーションを追加）
                 function animate() {
@@ -118,65 +111,102 @@
                     renderer.render(scene, camera);
                 }
                 animate();
-                console.log('インターネット上で、本物同士の合体に成功しました！');
             },
             null,
             (error) => console.error('エラー:', error)
         );
 
-        // 画面サイズ自動変更対応
         window.addEventListener('resize', () => {
             camera.aspect = container.clientWidth / container.clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(container.clientWidth, container.clientHeight);
         });
-        // 💡 ここから下の4行を新しく付け足します！
-        // アバター画面上での指の動き（スワイプ）を強制的にキャンセルするお守りです
-        container.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-        }, { passive: false });
+
+        // スワイプ防止のお守り
+        container.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
     </script>
 
-    <!-- ⬇️ Dify公式のチャット埋め込みコード ⬇️ -->
+    <!-- ⬇️ AI会話＆音声合成（お喋り機能）の自作プログラム ⬇️ -->
     <script>
-     window.difyChatbotConfig = {
-      token: '76UxzBeCsCD94UMJ',
-      inputs: {},
-      systemVariables: {},
-      userVariables: {},
-     }
-    </script>
-    <script
-     src="https://udify.app/embed.min.js"
-     id="76UxzBeCsCD94UMJ"
-     defer>
-    </script>
-    <style>
-      /* チャットボタンの位置を調整 */
-      #dify-chatbot-bubble-button {
-        background-color: #5c7bb0 !important; 
-        bottom: 15px !important; 
-        right: 15px !important;
-      }
-      
-      /* チャットウィンドウを「画面の下半分（50%）」にピッタリ固定する設定 */
-      #dify-chatbot-bubble-window {
-        width: 100vw !important;     /* 横幅をスマホ画面いっぱいに広げる */
-        height: 40vh !important;    /* 縦幅を画面のちょうど半分に固定 */
-        max-width: 100% !important;
-        max-height: 40vh !important;
-        bottom: 0 !important;       /* 画面の一番下に隙間なくピタッとくっつける */
-        right: 0 !important;
-        border-radius: 20px 20px 0 0 !important; /* 上側だけ丸みをつけてオシャレに */
-        box-shadow: 0 -5px 15px rgba(0,0,0,0.1) !important;
-      }
+        // ⚠️ 【重要設定】あなたの情報に書き換えてください ⚠️
+        const VERCEL_URL = 'https://my-ai-avatar-omega.vercel.app'; // 例: 'https://vercel.app'
+        const DIFY_TOKEN = '76UxzBeCsCD94UMJ'; // あなたのDifyのトークン
 
-      /* Dify内部の文字サイズを小さくし、文字間・行間をキュッと狭める設定 */
-      iframe {
-        font-size: 13px !important;         /* 文字を全体的に少し小さく */
-        letter-spacing: -0.02em !important; /* 文字の間隔をキュッと狭める */
-        line-height: 1.3 !important;        /* 行の間隔を狭めてコンパクトに */
-      }
-    </style>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // ユーザーのセリフを画面に出す
+            appendBubble(text, 'user');
+            userInput.value = '';
+
+            // AIの「考え中」のセリフを出す
+            const aiBubble = appendBubble('考え中だよ...', 'ai');
+
+            try {
+                // Vercelの中継基地へ安全にデータを送信します！
+                const response = await fetch(`${VERCEL_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, token: DIFY_TOKEN })
+                });
+
+                const data = await response.json();
+                
+                if (data && data.answer) {
+                    // AIの返事を画面に表示
+                    aiBubble.innerText = data.answer;
+                    
+                    // 💡 【大発明】AIの返事の文字を、スマホに「声」として喋らせます！
+                    speakVoice(data.answer);
+                } else {
+                    aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
+                }
+            } catch (error) {
+                console.error(error);
+                aiBubble.innerText = '中継基地との通信でエラーが起きちゃったみたい。';
+            }
+        }
+
+        // 🗣️ 音声合成で喋らせる魔法のプログラム（声の強制バインド版）
+        function speakVoice(text) {
+            // 前のセリフが残っていたら強制的にキャンセルして新しく喋らせるお守り
+            window.speechSynthesis.cancel();
+
+            const uttr = new SpeechSynthesisUtterance();
+            uttr.text = text;
+            uttr.lang = 'ja-JP'; 
+            uttr.rate = 1.0;     
+            uttr.pitch = 1.2;    
+
+            // 💡 PCやスマホの中に最初から入っている「本物の日本語の声」を自動で探し出す処理
+            const voices = window.speechSynthesis.getVoices();
+            const jaVoice = voices.find(voice => voice.lang.includes('ja-JP') || voice.lang.includes('ja_JP'));
+            
+            if (jaVoice) {
+                uttr.voice = jaVoice; // 見つかった日本語の声をセット！
+                console.log("日本語の音声を正常にセットしました:", jaVoice.name);
+            }
+
+            // 音声を再生！
+            window.speechSynthesis.speak(uttr);
+        }
+        function appendBubble(text, sender) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble', sender);
+            bubble.innerText = text;
+            chatContainer.appendChild(bubble);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return bubble;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    </script>
+
 </body>
 </html>
