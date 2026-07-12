@@ -5,21 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D AI Partner - Room</title>
     <style>
-        /* 画面全体のレイアウト調整（左右分割の魔法） */
-        body { 
+        /* 画面全体のレイアウト調整（上下50%に強制固定するお守り） */
+        html, body {
             margin: 0; 
             padding: 0; 
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* 画面全体のスクロール（スワイプ）を完全に禁止 */
+            position: fixed;  /* iPhone特有の画面のバウンドを防止 */
             background: #7494c4; 
             font-family: sans-serif; 
             display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
+            flex-direction: column; /* 上下に分割 */
         }
         
-        /* 3Dアバターが表示される左側のエリア */
+        /* 3Dアバターが表示される上半分のエリア（常に50%をキープ） */
         #avatar-container { 
-            flex: 1; 
-            height: 100%; 
+            width: 100%;
+            height: 50vh; /* 画面の縦幅のちょうど半分に固定 */
             background: #eceff1; 
             position: relative;
         }
@@ -32,12 +35,12 @@
         /* 案内テキストのスタイル */
         #welcome-msg { 
             position: absolute; 
-            top: 20px; 
-            left: 20px; 
+            top: 15px; 
+            left: 15px; 
             background: rgba(255, 255, 255, 0.8); 
-            padding: 10px 20px; 
+            padding: 8px 15px; 
             border-radius: 20px; 
-            font-size: 16px; 
+            font-size: 13px; /* 少し文字を小さく調整 */
             color: #333;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             pointer-events: none; 
@@ -143,19 +146,30 @@
      defer>
     </script>
     <style>
-      /* チャットボタンとウィンドウのサイズ調整（iPhone13完全対応版） */
+      /* チャットボタンの位置を調整 */
       #dify-chatbot-bubble-button {
         background-color: #5c7bb0 !important; 
-        bottom: 20px !important; /* ボタンの位置を押し上げるお守り */
-        right: 20px !important;
+        bottom: 15px !important; 
+        right: 15px !important;
       }
+      
+      /* チャットウィンドウを「画面の下半分（50%）」にピッタリ固定する設定 */
       #dify-chatbot-bubble-window {
-        width: 90vw !important;  /* スマホの画面の横幅90%に自動調整 */
-        height: 45vh !important; /* スマホの画面の縦幅45%（下半分）に自動調整 */
-        max-width: 400px !important; /* パソコンで見たときに大きくなりすぎない制限 */
-        max-height: 600px !important;
-        bottom: 80px !important;
-        right: 20px !important;
+        width: 100vw !important;     /* 横幅をスマホ画面いっぱいに広げる */
+        height: 50vh !important;    /* 縦幅を画面のちょうど半分に固定 */
+        max-width: 100% !important;
+        max-height: 50vh !important;
+        bottom: 0 !important;       /* 画面の一番下に隙間なくピタッとくっつける */
+        right: 0 !important;
+        border-radius: 20px 20px 0 0 !important; /* 上側だけ丸みをつけてオシャレに */
+        box-shadow: 0 -5px 15px rgba(0,0,0,0.1) !important;
+      }
+
+      /* Dify内部の文字サイズを小さくし、文字間・行間をキュッと狭める設定 */
+      iframe {
+        font-size: 13px !important;         /* 文字を全体的に少し小さく */
+        letter-spacing: -0.02em !important; /* 文字の間隔をキュッと狭める */
+        line-height: 1.3 !important;        /* 行の間隔を狭めてコンパクトに */
       }
     </style>
 </body>
