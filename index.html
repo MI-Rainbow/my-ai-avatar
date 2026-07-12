@@ -39,8 +39,8 @@
  <script type="importmap">
  {
  "imports": {
-"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+ "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+ "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
  }
  }
  </script>
@@ -117,7 +117,15 @@
  recognition.interimResults = false;
  recognition.onstart = () => { isRecording = true; micBtn.classList.add('recording'); userInput.placeholder = "声を聴いています..."; };
  recognition.onend = () => { isRecording = false; micBtn.classList.remove('recording'); userInput.placeholder = "メッセージを入力または声で..."; };
- recognition.onresult = (event) => { userInput.value = event.results[0][0].transcript; sendMessage(); };
+ 
+ // 【★修正箇所】クラッシュを回避する正しい音声データ取得の記述に直しました
+ recognition.onresult = (event) => { 
+ const speechResult = event.results.transcript || (event.results[0] && event.results[0][0] && event.results[0][0].transcript);
+ if (speechResult) {
+ userInput.value = speechResult; 
+ sendMessage(); 
+ }
+ };
  } else {
  micBtn.style.display = 'none';
  }
@@ -185,7 +193,7 @@
  speechQueue = [];
  isSpeaking = false;
 
- // 【追加機能】考え中にアバターに言わせる相槌リスト
+ // 考え中にアバターに言わせる相槌リスト
  const fillerPhrases = [
  "うーん、そうだね……",
  "ちょっと待ってね！",
