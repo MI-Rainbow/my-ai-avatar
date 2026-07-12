@@ -76,7 +76,6 @@
  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
  container.appendChild(renderer.domElement);
  
- // ライトの生成と設定（Three.js最新版のクラッシュ対策済み）
  const dirLight = new THREE.DirectionalLight(0xffffff, 3.0);
  dirLight.position.set(1.0, 1.0, 1.0).normalize();
  scene.add(dirLight);
@@ -140,7 +139,6 @@
  if (isRecording) {
  recognition.stop();
  } else {
- // 【iPhone音声ロック解除】
  window.speechSynthesis.cancel();
  const unlockUtterance = new SpeechSynthesisUtterance('');
  unlockUtterance.lang = 'ja-JP';
@@ -186,7 +184,7 @@
  window.speechSynthesis.speak(uttr);
  }
 
- // メッセージ送信とストリーミング受信処理
+ // メッセージ送信と一括受信処理（括弧書きのバグを完全修正）
  async function sendMessage() {
  const text = userInput.value.trim();
  if (!text) return;
@@ -198,10 +196,10 @@
  speechQueue = [];
  isSpeaking = false;
 
- // 考え中にアバターに言わせる相槌リスト
+ // 考え中にアバターに言わせる相槌
  const fillerPhrases = [
  "うーん、そうだね……",
- "ちょっと待ってね！",
+ "ちょっと待ね！",
  "なるほど……",
  "そうだなあ……",
  "ええっとね……"
@@ -217,30 +215,24 @@
  if (jaVoice) fillerUttr.voice = jaVoice;
  window.speechSynthesis.speak(fillerUttr);
 
-  // ーーー index.html の try の中身をここから上書き ーーー
-  try {
-    const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text })
-    });
-
-    const data = await response.json();
-    
-    if (data && data.answer) {
-      // 白紙にせず、届いたAIの回答をバシッと一発で表示
-      aiBubble.innerText = data.answer;
-      // AIの声をスピーカーから再生
-      speakTextChunk(data.answer);
-    } else {
-      aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
-    }
-
-  } catch (error) {
-    console.error(error);
-    aiBubble.innerText = '中継サーバーとの通信でエラーが起きちゃった。';
-  }
-  // ーーー ここまで上書き ーーー
+ try {
+ const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ text: text })
+ });
+ const data = await response.json();
+ 
+ if (data && data.answer) {
+ aiBubble.innerText = data.answer;
+ speakTextChunk(data.answer);
+ } else {
+ aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
+ }
+ } catch (error) {
+ console.error(error);
+ aiBubble.innerText = '中継サーバーとの通信でエラーが起きちゃった。';
+ }
  }
 
  function appendBubble(text, sender) {
