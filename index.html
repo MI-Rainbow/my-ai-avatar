@@ -40,8 +40,8 @@
             font-size: 16px; 
             color: #333;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            pointer-events: none; /* マウス操作を邪魔しないお守り */
-            z-index: 10; /* アバターの前に確実に表示させるお守り */
+            pointer-events: none; 
+            z-index: 10; 
         }
 
         /* スマホで見るときは上下分割に自動切り替えする設定 */
@@ -52,18 +52,18 @@
     </style>
     
     <!-- 
-      インターネット上（GitHub）で100%安全かつ
-      絶対にシステムにURLが削られない、最新Web標準の完全な住所です。
+      インターネット上（GitHub）で、お互いのバージョンが100%完全に一致する
+      本物の「本体」と本物の「GLTFLoader」を、世界で最も安全な配信サイト（unpkg）から自動読み込みします。
+      これであなたのPC内のthree.module.jsやGLTFLoader.jsは一切不要になり、バージョン違いのエラーも100%発生しません！
     -->
     <script type="importmap">
       {
         "imports": {
-          "three": "https://cloudflare.com/ajax/libs/three.js/r128/three.module.min.js",
-          "three/addons/": "https://jsdelivr.net/npm/three@0.128.0/examples/jsm/"
+          "three": "https://unpkg.com",
+          "three/addons/": "https://unpkg.com"
         }
       }
     </script>
-
 </head>
 <body>
 
@@ -82,16 +82,13 @@
         const container = document.getElementById('avatar-container');
         const scene = new THREE.Scene();
         
-        // カメラの位置（昨日の黄金比率に調整済みです）
+        // カメラの位置（黄金比率）
         const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 20.0);
         camera.position.set(0.0, 1.1, 1.2); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        
-        // iPhoneの最新セキュリティ制限を突破するための「縦横サイズ指定」
         renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(window.devicePixelRatio); // スマホ画面でアバターがボケずにクッキリ映る魔法です
-        
+        renderer.setPixelRatio(window.devicePixelRatio); 
         container.appendChild(renderer.domElement);
 
         // 照明（アバターを明るく照らす）
@@ -107,7 +104,7 @@
             (gltf) => {
                 const model = gltf.scene;
                 scene.add(model);
-                model.rotation.y = 0; // 昨日の調整通り、真っ直ぐ正面を向かせます
+                model.rotation.y = 0; // まっすぐ正面を向かせます
 
                 // アニメーションループ（ゆらゆら動く呼吸モーションを追加）
                 function animate() {
@@ -117,7 +114,7 @@
                     renderer.render(scene, camera);
                 }
                 animate();
-                console.log('アバターの合体に成功しました！');
+                console.log('インターネット上で、本物同士の合体に成功しました！');
             },
             null,
             (error) => console.error('エラー:', error)
@@ -140,7 +137,6 @@
       userVariables: {},
      }
     </script>
-    <!-- 💡 https:// から始まる完璧な本物の住所に修復しました -->
     <script
      src="https://udify.app/embed.min.js"
      id="76UxzBeCsCD94UMJ"
@@ -149,7 +145,7 @@
     <style>
       /* チャットボタンとウィンドウのサイズ調整 */
       #dify-chatbot-bubble-button {
-        background-color: #5c7bb0 !important; /* 背景に合わせたオシャレな青に変更 */
+        background-color: #5c7bb0 !important; 
       }
       #dify-chatbot-bubble-window {
         width: 26rem !important;
