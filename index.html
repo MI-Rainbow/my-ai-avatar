@@ -76,7 +76,11 @@
  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
  container.appendChild(renderer.domElement);
  
- scene.add(new THREE.DirectionalLight(0xffffff, 3.0).position.set(1.0, 1.0, 1.0).normalize());
+ // 【★エラー修正箇所】ライトの生成と座標設定を安全に2行に分けました
+ const dirLight = new THREE.DirectionalLight(0xffffff, 3.0);
+ dirLight.position.set(1.0, 1.0, 1.0).normalize();
+ scene.add(dirLight);
+ 
  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
  
  const loader = new GLTFLoader();
@@ -118,12 +122,14 @@
  recognition.onstart = () => { isRecording = true; micBtn.classList.add('recording'); userInput.placeholder = "声を聴いています..."; };
  recognition.onend = () => { isRecording = false; micBtn.classList.remove('recording'); userInput.placeholder = "メッセージを入力または声で..."; };
  
- // 【★修正箇所】クラッシュを回避する正しい音声データ取得の記述に直しました
  recognition.onresult = (event) => { 
- const speechResult = event.results.transcript || (event.results[0] && event.results[0][0] && event.results[0][0].transcript);
+ // 【最適化】どのブラウザでも確実に音声文字を取得できるように調整
+ if (event.results && event.results[0] && event.results[0][0]) {
+ const speechResult = event.results[0][0].transcript;
  if (speechResult) {
  userInput.value = speechResult; 
  sendMessage(); 
+ }
  }
  };
  } else {
