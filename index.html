@@ -3,23 +3,18 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
- <title>3D AI Partner - Voice Room</title>
+ <title>3D AI Partner - Fast Voice Room</title>
  <style>
- /* 画面全体のスクロールとバウンドを 100%禁止して固定します */
  html, body {
  margin: 0; padding: 0; width: 100%; height: 100%;
  overflow: hidden; position: fixed; background: #7494c4; 
  font-family: sans-serif; display: flex; flex-direction: column;
  }
- 
  #avatar-container { 
  width: 100%; height: 40%; 
  background: #eceff1; position: relative; touch-action: none;
  }
- canvas { 
- width: 100% !important; height: 100% !important; 
- display: block; object-fit: contain; 
- }
+ canvas { width: 100% !important; height: 100% !important; display: block; object-fit: contain; }
  #welcome-msg { 
  position: absolute; top: 12px; left: 12px; background: rgba(255, 255, 255, 0.8); 
  padding: 6px 12px; border-radius: 20px; font-size: 11px; color: #333; z-index: 10; 
@@ -32,28 +27,20 @@
  flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;
  -webkit-overflow-scrolling: touch;
  }
- .bubble { 
- max-width: 75%; padding: 8px 12px; border-radius: 18px; 
- font-size: 13px; letter-spacing: -0.02em; line-height: 1.3; word-break: break-all; 
- }
+ .bubble { max-width: 75%; padding: 8px 12px; border-radius: 18px; font-size: 13px; line-height: 1.3; word-break: break-all; }
  .user { background: #85e249; align-self: flex-end; border-top-right-radius: 2px; }
  .ai { background: #ffffff; align-self: flex-start; border-top-left-radius: 2px; }
- 
- #input-area { 
- background: #ffffff; padding: 10px 10px 30px 10px; 
- display: flex; gap: 8px; border-top: 1px solid #ddd; z-index: 30;
- position: relative;
- }
+ #input-area { background: #ffffff; padding: 10px 10px 30px 10px; display: flex; gap: 8px; border-top: 1px solid #ddd; z-index: 30; position: relative; }
  #user-input { flex: 1; padding: 8px 15px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; }
- #mic-btn { background: #e0e0e0; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
+ #mic-btn { background: #e0e0e0; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
  #mic-btn.recording { background: #ff5252; color: white; }
  #send-btn { background: #5c7bb0; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 14px; cursor: pointer; }
  </style>
  <script type="importmap">
  {
  "imports": {
-"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+ "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+ "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
  }
  }
  </script>
@@ -64,7 +51,7 @@
  </div>
  <div id="chat-section">
  <div id="chat-container">
- <div class="bubble ai">こんにちは！やっと声でお喋りできるようになったね。何でも話しかけてね！</div>
+ <div class="bubble ai">こんにちは！ストリーミング対応になって、もっとサクサクお話できるようになったよ！</div>
  </div>
  <div id="input-area">
  <button id="mic-btn" title="声で話す">🎙️</button>
@@ -72,52 +59,41 @@
  <button id="send-btn">送信</button>
  </div>
  </div>
+
  <script type="module">
  import * as THREE from 'three';
  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
  const container = document.getElementById('avatar-container');
  const scene = new THREE.Scene();
- 
  const width = container.clientWidth || window.innerWidth;
  const height = container.clientHeight || (window.innerHeight * 0.4);
- 
  const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
  camera.position.set(0.0, 1.0, 1.3); 
  const renderer = new THREE.WebGLRenderer({ antialias: true });
  renderer.setSize(width, height);
  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
  container.appendChild(renderer.domElement);
- const light = new THREE.DirectionalLight(0xffffff, 3.0);
- light.position.set(1.0, 1.0, 1.0).normalize();
- scene.add(light);
+ scene.add(new THREE.DirectionalLight(0xffffff, 3.0).position.set(1.0, 1.0, 1.0).normalize());
  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
  const loader = new GLTFLoader();
- loader.load(
- './avatar.vrm',
- (gltf) => {
+ loader.load('./avatar.vrm', (gltf) => {
  const model = gltf.scene;
  scene.add(model);
- model.rotation.y = 0; 
  function animate() {
  requestAnimationFrame(animate);
- const time = Date.now() * 0.002; 
- model.position.y = Math.sin(time) * 0.01;
+ model.position.y = Math.sin(Date.now() * 0.002) * 0.01;
  renderer.render(scene, camera);
  }
  animate();
- },
- null,
- (error) => console.error('エラー:', error)
- );
+ }, null, (error) => console.error('エラー:', error));
  window.addEventListener('resize', () => {
- const w = container.clientWidth;
- const h = container.clientHeight;
- camera.aspect = w / h;
+ camera.aspect = container.clientWidth / container.clientHeight;
  camera.updateProjectionMatrix();
- renderer.setSize(w, h);
+ renderer.setSize(container.clientWidth, container.clientHeight);
  });
  container.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
  </script>
+
  <script>
  const VERCEL_URL = 'https://my-ai-avatar-omega.vercel.app'; 
  const chatContainer = document.getElementById('chat-container');
@@ -125,7 +101,7 @@
  const sendBtn = document.getElementById('send-btn');
  const micBtn = document.getElementById('mic-btn');
 
- // --- 音声認識 (SpeechRecognition) の設定 ---
+ // 音声認識の設定
  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
  let recognition = null;
  let isRecording = false;
@@ -133,33 +109,12 @@
  if (SpeechRecognition) {
  recognition = new SpeechRecognition();
  recognition.lang = 'ja-JP';
- recognition.interimResults = false; // 確定した結果だけ取得
- recognition.maxAlternatives = 1;
-
- recognition.onstart = () => {
- isRecording = true;
- micBtn.classList.add('recording');
- userInput.placeholder = "声を聴いています...";
- };
-
- recognition.onend = () => {
- isRecording = false;
- micBtn.classList.remove('recording');
- userInput.placeholder = "メッセージを入力または声で...";
- };
-
- recognition.onresult = (event) => {
- const speechResult = event.results[0][0].transcript;
- userInput.value = speechResult;
- sendMessage(); // 音声認識が完了したら自動送信
- };
-
- recognition.onerror = (event) => {
- console.error("音声認識エラー:", event.error);
- };
+ recognition.interimResults = false;
+ recognition.onstart = () => { isRecording = true; micBtn.classList.add('recording'); userInput.placeholder = "声を聴いています..."; };
+ recognition.onend = () => { isRecording = false; micBtn.classList.remove('recording'); userInput.placeholder = "メッセージを入力または声で..."; };
+ recognition.onresult = (event) => { userInput.value = event.results[0][0].transcript; sendMessage(); };
  } else {
- micBtn.style.display = 'none'; // ブラウザが音声認識非対応ならボタンを隠す
- console.log("このブラウザは音声認識に対応していません。");
+ micBtn.style.display = 'none';
  }
 
  micBtn.addEventListener('click', () => {
@@ -167,58 +122,113 @@
  if (isRecording) {
  recognition.stop();
  } else {
- // 【iPhone対策】マイクを押した瞬間に、一瞬だけ無音を再生して音声ロックを解除します
+ // 【iPhone音声ロック解除】
  window.speechSynthesis.cancel();
  const unlockUtterance = new SpeechSynthesisUtterance('');
  unlockUtterance.lang = 'ja-JP';
  window.speechSynthesis.speak(unlockUtterance);
-
  recognition.start();
  }
  });
 
- // --- メッセージ送信処理 ---
+ // 音声合成用のキュー（順番待ちリスト）管理
+ let speechQueue = [];
+ let isSpeaking = false;
+
+ function speakTextChunk(text) {
+ if (!text.trim()) return;
+ speechQueue.push(text);
+ if (!isSpeaking) {
+ processSpeechQueue();
+ }
+ }
+
+ function processSpeechQueue() {
+ if (speechQueue.length === 0) {
+ isSpeaking = false;
+ return;
+ }
+ isSpeaking = true;
+ const currentText = speechQueue.shift();
+ const uttr = new SpeechSynthesisUtterance(currentText);
+ uttr.lang = 'ja-JP';
+ uttr.rate = 1.1; // テンポよく話すため少し早めに設定
+ uttr.pitch = 1.2;
+ 
+ const voices = window.speechSynthesis.getVoices();
+ const jaVoice = voices.find(v => v.lang.includes('ja-JP'));
+ if (jaVoice) uttr.voice = jaVoice;
+
+ uttr.onend = () => {
+ processSpeechQueue(); // 次の文章へ
+ };
+ uttr.onerror = () => {
+ processSpeechQueue();
+ };
+ window.speechSynthesis.speak(uttr);
+ }
+
+ // メッセージ送信とストリーミング受信処理
  async function sendMessage() {
  const text = userInput.value.trim();
  if (!text) return;
  appendBubble(text, 'user');
  userInput.value = '';
- const aiBubble = appendBubble('考え中だよ...', 'ai');
+ 
+ const aiBubble = appendBubble('...', 'ai');
+ window.speechSynthesis.cancel(); // 喋っている途中の音声があれば停止
+ speechQueue = [];
+ isSpeaking = false;
+
  try {
  const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ text: text })
  });
- const data = await response.json();
+
+ const reader = response.body.getReader();
+ const decoder = new TextDecoder();
+ let done = false;
+ let currentSentence = '';
+ aiBubble.innerText = ''; // 「...」を消してクリア
+
+ while (!done) {
+ const { value, done: doneReading } = await reader.read();
+ done = doneReading;
+ if (value) {
+ const chunk = decoder.decode(value, { stream: !done });
+ const lines = chunk.split('\n');
  
- if (data && data.answer) {
- aiBubble.innerText = data.answer;
- speakVoice(data.answer);
- } else {
- aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
+ for (const line of lines) {
+ if (line.startsWith('data:')) {
+ try {
+ const jsonData = JSON.parse(line.substring(5).trim());
+ if (jsonData.answer) {
+ const newText = jsonData.answer;
+ aiBubble.innerText += newText; // 画面に1文字ずつ追加
+ currentSentence += newText;
+
+ // 句読点（。や！や？）が来たら、その塊を即座に音声合成に回す
+ if (newText.includes('。') || newText.includes('！') || newText.includes('？') || newText.includes('\n')) {
+ speakTextChunk(currentSentence);
+ currentSentence = '';
  }
- } catch (error) {
- console.error(error);
- aiBubble.innerText = '中継基地との通信でエラーが起きちゃったみたい。';
  }
+ } catch (e) {}
+ }
+ }
+ }
+ }
+ // 残った最後の文章を喋らせる
+ if (currentSentence.trim()) {
+ speakTextChunk(currentSentence);
  }
 
- // --- 音声合成 (読み上げ) 処理 ---
- function speakVoice(text) {
- window.speechSynthesis.cancel();
- const uttr = new SpeechSynthesisUtterance();
- uttr.text = text;
- uttr.lang = 'ja-JP'; 
- uttr.rate = 1.0; 
- uttr.pitch = 1.2; 
- const voices = window.speechSynthesis.getVoices();
- const jaVoice = voices.find(voice => voice.lang.includes('ja-JP') || voice.lang.includes('ja_JP'));
- 
- if (jaVoice) {
- uttr.voice = jaVoice;
+ } catch (error) {
+ console.error(error);
+ aiBubble.innerText = 'エラーが発生しちゃった。';
  }
- window.speechSynthesis.speak(uttr);
  }
 
  function appendBubble(text, sender) {
@@ -232,9 +242,7 @@
 
  sendBtn.addEventListener('click', sendMessage);
  userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
- window.addEventListener('DOMContentLoaded', () => {
- window.speechSynthesis.getVoices();
- });
+ window.addEventListener('DOMContentLoaded', () => { window.speechSynthesis.getVoices(); });
  </script>
 </body>
 </html>

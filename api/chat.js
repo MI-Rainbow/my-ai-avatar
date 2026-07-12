@@ -1,6 +1,5 @@
-// Difyのチャットボット専用：400エラーを回避する完全版中継プログラム
+// ストリーミング中継に対応した、最速レスポンス用の api/chat.js
 export default async function handler(request, response) {
-  // CORSエラーを防ぐためのお守り設定
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,14 +14,12 @@ export default async function handler(request, response) {
   
   try {
     const { text } = request.body;
-    
-    // Vercelに設定した環境変数を取得
     const systemToken = process.env.DIFY_API_KEY;
     if (!systemToken) {
-      return response.status(500).json({ error: 'Vercel側に DIFY_API_KEY が設定されていません。' });
+      return response.status(500).json({ error: 'DIFY_API_KEY が設定されていません。' });
     }
     
-    // チャットボットに最適な「blocking」モードで通信します
+    // response_mode を「streaming」にして、Difyからリアルタイムに言葉を返してもらいます
     const difyResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
       method: 'POST',
       headers: {
@@ -32,26 +29,41 @@ export default async function handler(request, response) {
       body: JSON.stringify({
         inputs: {},
         query: text,
-        response_mode: 'blocking', // チャットボットは一括返却（blocking）が最も安定します
+        response_mode: 'streaming',
         user: 'vercel-user',
-        conversation_id: "" // 【超重要】これがないと400エラーになります！
+        conversation_id: ""
       })
     });
     
-    const data = await difyResponse.json();
-    
     if (!difyResponse.ok) {
-      console.error('Dify API Error:', data);
-      return response.status(difyResponse.status).json({ error: data.message || 'Difyエラー' });
+      return response.status(difyResponse.status).json({ error: 'Dify側でエラーが発生しました。' });
     }
     
-    // Difyから返ってきた正常な回答（data.answer）をそのままindex.htmlへ返却します
-    return response.status(200).json({
-      answer: data.answer || 'お返事が見つかりませんでした。'
-    });
+    // ブラウザに対しても「これからリアルタイムにデータを流し込みます（Stream）」と伝えます
+    response.setHeader('Content-Type', 'text/event-stream');
+    response.setHeader('Cache-Control', 'no-cache');
+    response.setHeader('Connection', 'keep-alive');
+    
+    const reader = difyResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+    
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: !done });
+        // Difyから届いた生のデータを、そのままブラウザにリアルタイムで転送します
+        response.write(chunk);
+      }
+    }
+    
+    response.end();
     
   } catch (error) {
     console.error(error);
-    return response.status(500).json({ error: 'サーバー内部エラーが発生しました。' });
+    if (!response.writableEnded) {
+      response.status(500).json({ error: 'サーバー内部エラー' });
+    }
   }
 }
