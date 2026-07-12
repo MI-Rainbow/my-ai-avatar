@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
- <title>3D AI Partner - Fast Voice Room</title>
+ <title>3D AI Partner - Voice Room</title>
  <style>
  html, body {
  margin: 0; padding: 0; width: 100%; height: 100%;
@@ -51,7 +51,7 @@
  </div>
  <div id="chat-section">
  <div id="chat-container">
- <div class="bubble ai">こんにちは！ストリーミングと相槌に対応したよ。なんでも話しかけてね！</div>
+ <div class="bubble ai">こんにちは！いつでも話しかけてね！</div>
  </div>
  <div id="input-area">
  <button id="mic-btn" title="声で話す">🎙️</button>
@@ -147,26 +147,10 @@
  }
  });
 
- // 音声合成用のキュー管理
- let speechQueue = [];
- let isSpeaking = false;
-
- function speakTextChunk(text) {
- if (!text.trim()) return;
- speechQueue.push(text);
- if (!isSpeaking) {
- processSpeechQueue();
- }
- }
-
- function processSpeechQueue() {
- if (speechQueue.length === 0) {
- isSpeaking = false;
- return;
- }
- isSpeaking = true;
- const currentText = speechQueue.shift();
- const uttr = new SpeechSynthesisUtterance(currentText);
+ // 音声再生用のシンプルな処理
+ function speakVoice(text) {
+ window.speechSynthesis.cancel();
+ const uttr = new SpeechSynthesisUtterance(text);
  uttr.lang = 'ja-JP';
  uttr.rate = 1.1; 
  uttr.pitch = 1.2;
@@ -174,17 +158,10 @@
  const voices = window.speechSynthesis.getVoices();
  const jaVoice = voices.find(v => v.lang.includes('ja-JP'));
  if (jaVoice) uttr.voice = jaVoice;
-
- uttr.onend = () => {
- processSpeechQueue(); 
- };
- uttr.onerror = () => {
- processSpeechQueue();
- };
  window.speechSynthesis.speak(uttr);
  }
 
- // メッセージ送信と一括受信処理（括弧書きのバグを完全修正）
+ // メッセージ送信と一括受信処理
  async function sendMessage() {
  const text = userInput.value.trim();
  if (!text) return;
@@ -193,27 +170,17 @@
  
  const aiBubble = appendBubble('...', 'ai');
  window.speechSynthesis.cancel(); 
- speechQueue = [];
- isSpeaking = false;
 
- // 考え中にアバターに言わせる相槌
+ // 考え中にアバターに言わせる相槌リスト
  const fillerPhrases = [
  "うーん、そうだね……",
- "ちょっと待ね！",
+ "ちょっと待ってね！",
  "なるほど……",
  "そうだなあ……",
  "ええっとね……"
  ];
  const randomFiller = fillerPhrases[Math.floor(Math.random() * fillerPhrases.length)];
- 
- const fillerUttr = new SpeechSynthesisUtterance(randomFiller);
- fillerUttr.lang = 'ja-JP';
- fillerUttr.rate = 1.1;
- fillerUttr.pitch = 1.2;
- const voices = window.speechSynthesis.getVoices();
- const jaVoice = voices.find(v => v.lang.includes('ja-JP'));
- if (jaVoice) fillerUttr.voice = jaVoice;
- window.speechSynthesis.speak(fillerUttr);
+ speakVoice(randomFiller);
 
  try {
  const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
@@ -224,8 +191,9 @@
  const data = await response.json();
  
  if (data && data.answer) {
+ // 届いたデータを一発でバシッと表示して喋らせる（以前の確実な方法）
  aiBubble.innerText = data.answer;
- speakTextChunk(data.answer);
+ speakVoice(data.answer);
  } else {
  aiBubble.innerText = 'ごめんね、うまく言葉が出ないよ。';
  }
