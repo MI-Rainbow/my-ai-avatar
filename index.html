@@ -39,8 +39,8 @@
  <script type="importmap">
  {
  "imports": {
- "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
- "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
  }
  }
  </script>
@@ -51,7 +51,7 @@
  </div>
  <div id="chat-section">
  <div id="chat-container">
- <div class="bubble ai">こんにちは！ストリーミング対応になって、もっとサクサクお話できるようになったよ！</div>
+ <div class="bubble ai">こんにちは！ストリーミングと相槌に対応したよ。なんでも話しかけてね！</div>
  </div>
  <div id="input-area">
  <button id="mic-btn" title="声で話す">🎙️</button>
@@ -63,18 +63,22 @@
  <script type="module">
  import * as THREE from 'three';
  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+ 
  const container = document.getElementById('avatar-container');
  const scene = new THREE.Scene();
  const width = container.clientWidth || window.innerWidth;
  const height = container.clientHeight || (window.innerHeight * 0.4);
  const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
  camera.position.set(0.0, 1.0, 1.3); 
+ 
  const renderer = new THREE.WebGLRenderer({ antialias: true });
  renderer.setSize(width, height);
  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
  container.appendChild(renderer.domElement);
+ 
  scene.add(new THREE.DirectionalLight(0xffffff, 3.0).position.set(1.0, 1.0, 1.0).normalize());
  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+ 
  const loader = new GLTFLoader();
  loader.load('./avatar.vrm', (gltf) => {
  const model = gltf.scene;
@@ -86,6 +90,7 @@
  }
  animate();
  }, null, (error) => console.error('エラー:', error));
+ 
  window.addEventListener('resize', () => {
  camera.aspect = container.clientWidth / container.clientHeight;
  camera.updateProjectionMatrix();
@@ -152,7 +157,7 @@
  const currentText = speechQueue.shift();
  const uttr = new SpeechSynthesisUtterance(currentText);
  uttr.lang = 'ja-JP';
- uttr.rate = 1.1; // テンポよく話すため少し早めに設定
+ uttr.rate = 1.1; 
  uttr.pitch = 1.2;
  
  const voices = window.speechSynthesis.getVoices();
@@ -160,7 +165,7 @@
  if (jaVoice) uttr.voice = jaVoice;
 
  uttr.onend = () => {
- processSpeechQueue(); // 次の文章へ
+ processSpeechQueue(); 
  };
  uttr.onerror = () => {
  processSpeechQueue();
@@ -175,34 +180,31 @@
  appendBubble(text, 'user');
  userInput.value = '';
  
-  const aiBubble = appendBubble('...', 'ai');
-  window.speechSynthesis.cancel(); // 喋っている途中の音声があれば停止
-  speechQueue = [];
-  isSpeaking = false;
+ const aiBubble = appendBubble('...', 'ai');
+ window.speechSynthesis.cancel(); 
+ speechQueue = [];
+ isSpeaking = false;
 
-  // 【追加機能】考え中にアバターに言わせる相槌リスト
-  const fillerPhrases = [
-    "うーん、そうだね……",
-    "ちょっと待ってね！",
-    "なるほど……",
-    "そうだなあ……",
-    "ええっとね……"
-  ];
-  // リストからランダムに1つ選ぶ
-  const randomFiller = fillerPhrases[Math.floor(Math.random() * fillerPhrases.length)];
-  
-  // Difyからの返答を待たずに、その場で即座に相槌を喋らせます
-  const fillerUttr = new SpeechSynthesisUtterance(randomFiller);
-  fillerUttr.lang = 'ja-JP';
-  fillerUttr.rate = 1.1;
-  fillerUttr.pitch = 1.2;
-  const voices = window.speechSynthesis.getVoices();
-  const jaVoice = voices.find(v => v.lang.includes('ja-JP'));
-  if (jaVoice) fillerUttr.voice = jaVoice;
-  window.speechSynthesis.speak(fillerUttr);
+ // 【追加機能】考え中にアバターに言わせる相槌リスト
+ const fillerPhrases = [
+ "うーん、そうだね……",
+ "ちょっと待ってね！",
+ "なるほど……",
+ "そうだなあ……",
+ "ええっとね……"
+ ];
+ const randomFiller = fillerPhrases[Math.floor(Math.random() * fillerPhrases.length)];
+ 
+ const fillerUttr = new SpeechSynthesisUtterance(randomFiller);
+ fillerUttr.lang = 'ja-JP';
+ fillerUttr.rate = 1.1;
+ fillerUttr.pitch = 1.2;
+ const voices = window.speechSynthesis.getVoices();
+ const jaVoice = voices.find(v => v.lang.includes('ja-JP'));
+ if (jaVoice) fillerUttr.voice = jaVoice;
+ window.speechSynthesis.speak(fillerUttr);
 
-  try {
-
+ try {
  const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
@@ -213,7 +215,7 @@
  const decoder = new TextDecoder();
  let done = false;
  let currentSentence = '';
- aiBubble.innerText = ''; // 「...」を消してクリア
+ aiBubble.innerText = ''; 
 
  while (!done) {
  const { value, done: doneReading } = await reader.read();
@@ -228,10 +230,9 @@
  const jsonData = JSON.parse(line.substring(5).trim());
  if (jsonData.answer) {
  const newText = jsonData.answer;
- aiBubble.innerText += newText; // 画面に1文字ずつ追加
+ aiBubble.innerText += newText; 
  currentSentence += newText;
 
- // 句読点（。や！や？）が来たら、その塊を即座に音声合成に回す
  if (newText.includes('。') || newText.includes('！') || newText.includes('？') || newText.includes('\n')) {
  speakTextChunk(currentSentence);
  currentSentence = '';
@@ -242,7 +243,6 @@
  }
  }
  }
- // 残った最後の文章を喋らせる
  if (currentSentence.trim()) {
  speakTextChunk(currentSentence);
  }
