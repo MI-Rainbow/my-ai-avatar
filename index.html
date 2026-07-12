@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D AI Partner - Room</title>
+    <style>
+        /* 画面全体のレイアウト調整（左右分割の魔法） */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #7494c4; 
+            font-family: sans-serif; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        
+        /* 3Dアバターが表示される左側のエリア */
+        #avatar-container { 
+            flex: 1; 
+            height: 100%; 
+            background: #eceff1; 
+            position: relative;
+        }
+        canvas { 
+            width: 100% !important; 
+            height: 100% !important; 
+            display: block; 
+        }
+
+        /* 案内テキストのスタイル */
+        #welcome-msg { 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            background: rgba(255, 255, 255, 0.8); 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            font-size: 16px; 
+            color: #333;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            pointer-events: none; /* マウス操作を邪魔しないお守り */
+        }
+
+        /* スマホで見るときは上下分割に自動切り替えする設定 */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #avatar-container { height: 50vh; }
+        }
+    </style>
+    
+    <!-- パソコンの中の「three.module.js」を正しく登録します -->
+    <!--
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./three.js-master/build/three.module.js",
+          "three/addons/": "./three.js-master/examples/jsm/"
+        }
+      }
+    </script>
+    -->
+    <!-- 
+      インターネット上（GitHub）で公開するため、
+      安全な配信サイトから最新の本物のThree.jsを自動で読み込みます。
+      これで巨大なフォルダーのアップロードは一切不要になります！
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com",
+          "three/addons/": "https://unpkg.com"
+        }
+      }
+    </script>
+
+</head>
+<body>
+
+    <!-- 左半分：3Dアバターのお部屋 -->
+    <div id="avatar-container">
+        <div id="welcome-msg">私のお部屋へようこそ！右下のボタンから話しかけてね。</div>
+    </div>
+
+    <!-- 右半分（または右下）：Difyチャットが自動で埋め込まれる空間 -->
+
+    <!-- ⬇️ 3Dアバターを動かすプログラム ⬇️ -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        const container = document.getElementById('avatar-container');
+        const scene = new THREE.Scene();
+        
+        // カメラの位置（昨日の黄金比率に調整済みです）
+        const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 20.0);
+        camera.position.set(0.0, 1.1, 1.2); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+
+        // 照明（アバターを明るく照らす）
+        const light = new THREE.DirectionalLight(0xffffff, 3.0);
+        light.position.set(1.0, 1.0, 1.0).normalize();
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+
+        // アバター（avatar.vrm）の読み込み
+        const loader = new GLTFLoader();
+        loader.load(
+            './avatar.vrm',
+            (gltf) => {
+                const model = gltf.scene;
+                scene.add(model);
+                model.rotation.y = 0; // 昨日の調整通り、真っ直ぐ正面を向かせます
+
+                // アニメーションループ（ゆらゆら動く呼吸モーションを追加）
+                function animate() {
+                    requestAnimationFrame(animate);
+                    
+                    // 時間の経過を使って、綺麗な波（サイン波）を作ります
+                    const time = Date.now() * 0.002; 
+                    
+                    // アバターの上下位置（y軸）をほんの少しだけ優しく揺らします
+                    model.position.y = Math.sin(time) * 0.01;
+                    
+                    renderer.render(scene, camera);
+                }
+
+                animate();
+                console.log('アバターの合体に成功しました！');
+            },
+            null,
+            (error) => console.error('エラー:', error)
+        );
+
+        // 画面サイズ自動変更対応
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+    </script>
+
+    <!-- ⬇️ Dify公式のチャット埋め込みコード ⬇️ -->
+    <script>
+     window.difyChatbotConfig = {
+      token: '76UxzBeCsCD94UMJ',
+      inputs: {},
+      systemVariables: {},
+      userVariables: {},
+     }
+    </script>
+    <script
+     src="udify.app/embed.min.js"
+     id="76UxzBeCsCD94UMJ"
+     defer>
+    </script>
+    <style>
+      /* チャットボタンとウィンドウのサイズ調整 */
+      #dify-chatbot-bubble-button {
+        background-color: #5c7bb0 !important; /* 背景に合わせたオシャレな青に変更 */
+      }
+      #dify-chatbot-bubble-window {
+        width: 26rem !important;
+        height: 42rem !important;
+      }
+    </style>
+
+</body>
+</html>
