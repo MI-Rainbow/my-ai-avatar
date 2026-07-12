@@ -156,7 +156,7 @@
                 const response = await fetch(`${VERCEL_URL}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text, token: DIFY_TOKEN })
+                    body: JSON.stringify({ text: text })
                 });
 
                 const data = await response.json();
