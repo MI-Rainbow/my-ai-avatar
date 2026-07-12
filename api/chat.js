@@ -23,7 +23,7 @@ export default async function handler(request, response) {
     }
     
     // チャットボットに最適な「blocking」モードで通信します
-    const difyResponse = await fetch('https://dify.ai', {
+    const difyResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${systemToken}`,
