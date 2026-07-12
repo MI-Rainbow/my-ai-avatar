@@ -143,15 +143,20 @@
      defer>
     </script>
     <style>
-      /* チャットボタンとウィンドウのサイズ調整 */
+      /* チャットボタンとウィンドウのサイズ調整（iPhone13完全対応版） */
       #dify-chatbot-bubble-button {
         background-color: #5c7bb0 !important; 
+        bottom: 20px !important; /* ボタンの位置を押し上げるお守り */
+        right: 20px !important;
       }
       #dify-chatbot-bubble-window {
-        width: 26rem !important;
-        height: 42rem !important;
+        width: 90vw !important;  /* スマホの画面の横幅90%に自動調整 */
+        height: 45vh !important; /* スマホの画面の縦幅45%（下半分）に自動調整 */
+        max-width: 400px !important; /* パソコンで見たときに大きくなりすぎない制限 */
+        max-height: 600px !important;
+        bottom: 80px !important;
+        right: 20px !important;
       }
     </style>
-
 </body>
 </html>
