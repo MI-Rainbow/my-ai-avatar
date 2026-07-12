@@ -175,12 +175,34 @@
  appendBubble(text, 'user');
  userInput.value = '';
  
- const aiBubble = appendBubble('...', 'ai');
- window.speechSynthesis.cancel(); // 喋っている途中の音声があれば停止
- speechQueue = [];
- isSpeaking = false;
+  const aiBubble = appendBubble('...', 'ai');
+  window.speechSynthesis.cancel(); // 喋っている途中の音声があれば停止
+  speechQueue = [];
+  isSpeaking = false;
 
- try {
+  // 【追加機能】考え中にアバターに言わせる相槌リスト
+  const fillerPhrases = [
+    "うーん、そうだね……",
+    "ちょっと待ってね！",
+    "なるほど……",
+    "そうだなあ……",
+    "ええっとね……"
+  ];
+  // リストからランダムに1つ選ぶ
+  const randomFiller = fillerPhrases[Math.floor(Math.random() * fillerPhrases.length)];
+  
+  // Difyからの返答を待たずに、その場で即座に相槌を喋らせます
+  const fillerUttr = new SpeechSynthesisUtterance(randomFiller);
+  fillerUttr.lang = 'ja-JP';
+  fillerUttr.rate = 1.1;
+  fillerUttr.pitch = 1.2;
+  const voices = window.speechSynthesis.getVoices();
+  const jaVoice = voices.find(v => v.lang.includes('ja-JP'));
+  if (jaVoice) fillerUttr.voice = jaVoice;
+  window.speechSynthesis.speak(fillerUttr);
+
+  try {
+
  const response = await fetch(`${VERCEL_URL}/api/chat.js`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
